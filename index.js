@@ -237,3 +237,96 @@ Ogr2ogr.prototype._clean = function () {
     util.rmDir(this._ogrOutPath, all())
   }
 }
+
+
+//new code for ogrinfo
+Ogr2ogr.prototype.info = function (cb) {
+	var ogr2ogr = this
+	var buf = []
+	var one = util.oneCallback(cb)
+
+	this.infostream()
+	.on('data', function (chunk) { buf.push(chunk) })
+	.on('error', one)
+	.on('close', function () {
+		var data = Buffer.concat(buf)
+		data = data.toString();
+		var idx = data.indexOf("Layer name:");
+		var obj={"file":data.substring(6,idx).replace(/\s+/g, ' ').trim()};
+		data = data.substring(idx).replace(/[\:\n\r]+/g,"|").trim();	      
+		data = data.split("|");
+
+		for(var i=0;i<data.length-1;i+=2)
+			obj[data[i]]=data[i+1].trim();
+
+		obj = JSON.stringify(obj);
+		one(null, obj)
+	})
+}
+
+Ogr2ogr.prototype.infostream = function () {
+	return this._info()
+}
+
+Ogr2ogr.prototype._info = function () {
+	var ogr2ogr = this
+	var ostream = new stream.PassThrough()
+
+	this._getOrgInPath(function (er, ogrInPath) {
+		if (er) return wrapUp(er)
+
+		ogr2ogr._ogrInPath = ogrInPath
+		var args = ['-fields=yes','-geom=SUMMARY','-so','-al',ogrInPath]
+
+		var errbuf = "";
+		console.log(process.env);
+		var s = cp.spawn('ogrinfo', args, {env: process.env})
+
+		if (!ogr2ogr._isZipOut) s.stdout.pipe(ostream)
+
+		var one = util.oneCallback(wrapUp)
+
+		s.stderr.setEncoding('ascii')
+		s.stderr.on('data', function (chunk) {
+			errbuf += chunk;
+		})
+		s.on('error', function(err) {
+			if (errbuf) errbuf += '\n' + err;
+			else errbuf = err;
+		})
+		s.on('close', function (code) {
+			if (errbuf) ogr2ogr.emit('ogrinfo', errbuf)
+			clearTimeout(killTimeout)
+			console.log(code)
+			console.log(errbuf);
+			one(code ? new Error(errbuf || "ogrinfo failed to do the conversion") : null)
+		})
+
+		var killTimeout = setTimeout(function () {
+			if (s._handle) {
+				ostream.emit('error', new Error('ogrinfo took longer than '+ogr2ogr._timeout+' to complete'))
+				s.stdout.destroy()
+				s.stderr.destroy()
+				s.kill('SIGKILL')
+			}
+		}, ogr2ogr._timeout)
+	})
+
+	function wrapUp (er) {
+		if (er) {
+			ostream.emit('error', er)
+			return ogr2ogr._clean()
+		}
+		if (!ogr2ogr._isZipOut) {
+			ostream.emit('close')
+			return ogr2ogr._clean()
+		}
+
+		var zs = zip.createZipStream(ogr2ogr._ogrOutPath)
+		zs.on('error', function (er) { ostream.emit('error', er) })
+		zs.on('end', function () { ostream.emit('close'); ogr2ogr._clean() })
+		zs.pipe(ostream)
+	}
+
+	return ostream
+}
