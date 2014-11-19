@@ -279,7 +279,6 @@ Ogr2ogr.prototype._info = function () {
 		var args = ['-fields=yes','-geom=SUMMARY','-so','-al',ogrInPath]
 
 		var errbuf = "";
-		console.log(process.env);
 		var s = cp.spawn('ogrinfo', args, {env: process.env})
 
 		if (!ogr2ogr._isZipOut) s.stdout.pipe(ostream)
@@ -297,9 +296,7 @@ Ogr2ogr.prototype._info = function () {
 		s.on('close', function (code) {
 			if (errbuf) ogr2ogr.emit('ogrinfo', errbuf)
 			clearTimeout(killTimeout)
-			console.log(code)
-			console.log(errbuf);
-			one(code ? new Error(errbuf || "ogrinfo failed to do the conversion") : null)
+			one(code ? new Error(errbuf || "ogrinfo failed") : null)
 		})
 
 		var killTimeout = setTimeout(function () {
