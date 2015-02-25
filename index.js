@@ -170,7 +170,7 @@ Ogr2ogr.prototype._run = function () {
 
     var s = cp.spawn('ogr2ogr', logCommand(args))
 
-    if (!ogr2ogr._isZipOut) s.stdout.pipe(ostream)
+    if (!ogr2ogr._isZipOut) s.stdout.pipe(ostream, { end: false })
 
     var one = util.oneCallback(wrapUp)
 
@@ -183,11 +183,7 @@ Ogr2ogr.prototype._run = function () {
       else errbuf = err;
     })
     s.on('close', function (code) {
-      if (errbuf) {
-      	//force code to 1 since it's 0 is returned even for errors sah
-      	code=1;
-      	ogr2ogr.emit('ogrinfo', errbuf)
-      }
+    	if(errbuf)code=1;
       clearTimeout(killTimeout)
       one(code ? new Error(errbuf || "ogr2ogr failed to do the conversion") : null)
     })
@@ -208,6 +204,7 @@ Ogr2ogr.prototype._run = function () {
       return ogr2ogr._clean()
     }
     if (!ogr2ogr._isZipOut) {
+      ostream.emit('end')
       ostream.emit('close')
       return ogr2ogr._clean()
     }
@@ -242,8 +239,35 @@ Ogr2ogr.prototype._clean = function () {
   }
 }
 
+/*
+ * Added sah
 
-//new code for ogrinfo
+INFO: Open of `C:\enide\ws\ma/public/files/recent_sales_coconino.shp'
+      using driver `ESRI Shapefile' successful.
+
+Layer name: recent_sales_coconino
+Geometry: 3D Polygon
+Feature Count: 1000
+Extent: (-111.688977, 35.158286) - (-111.533639, 35.239901)
+Layer SRS WKT:
+GEOGCS["GCS_WGS_1984",
+    DATUM["WGS_1984",
+        SPHEROID["WGS_84",6378137,298.257223563]],
+    PRIMEM["Greenwich",0],
+    UNIT["Degree",0.017453292519943295]]
+Name: String (80.0)
+descriptio: String (80.0)
+timestamp: Date (10.0)
+begin: Date (10.0)
+end: Date (10.0)
+altitudeMo: String (80.0)
+tessellate: Integer (10.0)
+extrude: Integer (10.0)
+visibility: Integer (10.0)
+
+
+
+ */
 Ogr2ogr.prototype.info = function (cb) {
 	var ogr2ogr = this
 	var buf = []
@@ -255,25 +279,42 @@ Ogr2ogr.prototype.info = function (cb) {
 	.on('close', function () {
 		var data = Buffer.concat(buf)
 		data = data.toString();
+		/*
+		var fs = require('fs');
+		fs.writeFile('message.txt', data, function (err) {
+			  if (err) throw err;
+			  console.log('It\'s saved!');
+		});
+		*/
 		var idx = data.indexOf("Layer name:");
-		//note: doesn't return projection info yet
+		//
 		var obj={"file":data.substring(6,idx).replace(/\s+/g, ' ').trim()};
 		data = data.split("\n");
 		for(var i=0;i<data.length-1;i++){
 			var item = data[i].split(":"); 
 			if(item.length==2)obj[item[0]]=item[1].trim();
 		}
+		//data = data.substring(idx).replace(/[\:\n\r]+/g,"|").trim();	
+		//console.log(data);
+		//data = data.split("|");
+		//console.log(data);
+		//for(var i=0;i<data.length-1;i+=2)
+			//
+		//	obj[data[i]]=data[i+1].trim();
+		//console.log(obj);
+
+		//data = JSON.parse(data);
+		//obj = JSON.stringify(obj);
+
+		//try { data = JSON.parse(data) }
+		//catch (er) { return one(er) }
+
 		/*
-		var idx = data.indexOf("Layer name:");
-		var obj={"file":data.substring(6,idx).replace(/\s+/g, ' ').trim()};
-		data = data.substring(idx).replace(/[\:\n\r]+/g,"|").trim();	      
-		data = data.split("|");
-
-		for(var i=0;i<data.length-1;i+=2)
-			obj[data[i]]=data[i+1].trim();
-
-		obj = JSON.stringify(obj);
-		*/
+	      if (ogr2ogr._format == 'GeoJSON') {
+	        try { data = JSON.parse(data) }
+	        catch (er) { return one(er) }
+	      }
+		 */
 		one(null, obj)
 	})
 }
@@ -293,6 +334,7 @@ Ogr2ogr.prototype._info = function () {
 		var args = ['-fields=yes','-geom=SUMMARY','-so','-al',ogrInPath]
 
 		var errbuf = "";
+		//console.log(process.env);
 		var s = cp.spawn('ogrinfo', args, {env: process.env})
 
 		if (!ogr2ogr._isZipOut) s.stdout.pipe(ostream)
@@ -310,7 +352,9 @@ Ogr2ogr.prototype._info = function () {
 		s.on('close', function (code) {
 			if (errbuf) ogr2ogr.emit('ogrinfo', errbuf)
 			clearTimeout(killTimeout)
-			one(code ? new Error(errbuf || "ogrinfo failed") : null)
+			console.log(code)
+			console.log(errbuf);
+			one(code ? new Error(errbuf || "ogrinfo failed to do the conversion") : null)
 		})
 
 		var killTimeout = setTimeout(function () {
