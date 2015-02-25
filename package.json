@@ -1,7 +1,7 @@
 {
   "name": "ogr2ogr",
-  "version": "0.5.0",
-  "description": "ogr2ogr wrapper w/ multiple format support",
+  "version": "0.6.0",
+  "description": "ogr2ogr wrapper w/ multiple format support.  Forked and ogrinfo function added",
   "keywords": [
     "ogr2ogr",
     "stream",
@@ -11,9 +11,9 @@
   "author": "Marc Harter <wavded@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "http://github.com/wavded/ogr2ogr.git"
+    "url": "http://github.com/traderboy/ogr2ogr.git"
   },
-  "homepage": "http://github.com/wavded/ogr2ogr",
+  "homepage": "http://github.com/traderboy/ogr2ogr",
   "scripts": {
     "test": "tape \"test/*-test.js\"",
     "docker-build": "docker build --rm -t wavded/ogre .",
