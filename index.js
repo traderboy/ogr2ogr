@@ -352,8 +352,8 @@ Ogr2ogr.prototype._info = function () {
 		s.on('close', function (code) {
 			if (errbuf) ogr2ogr.emit('ogrinfo', errbuf)
 			clearTimeout(killTimeout)
-			console.log(code)
-			console.log(errbuf);
+			//console.log(code)
+			//console.log(errbuf);
 			one(code ? new Error(errbuf || "ogrinfo failed to do the conversion") : null)
 		})
 
