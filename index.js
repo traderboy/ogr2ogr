@@ -183,7 +183,11 @@ Ogr2ogr.prototype._run = function () {
       else errbuf = err;
     })
     s.on('close', function (code) {
-      if (errbuf) ogr2ogr.emit('ogrinfo', errbuf)
+      if (errbuf) {
+      	//force code to 1 since it's 0 is returned even for errors sah
+      	code=1;
+      	ogr2ogr.emit('ogrinfo', errbuf)
+      }
       clearTimeout(killTimeout)
       one(code ? new Error(errbuf || "ogr2ogr failed to do the conversion") : null)
     })
@@ -252,6 +256,15 @@ Ogr2ogr.prototype.info = function (cb) {
 		var data = Buffer.concat(buf)
 		data = data.toString();
 		var idx = data.indexOf("Layer name:");
+		//note: doesn't return projection info yet
+		var obj={"file":data.substring(6,idx).replace(/\s+/g, ' ').trim()};
+		data = data.split("\n");
+		for(var i=0;i<data.length-1;i++){
+			var item = data[i].split(":"); 
+			if(item.length==2)obj[item[0]]=item[1].trim();
+		}
+		/*
+		var idx = data.indexOf("Layer name:");
 		var obj={"file":data.substring(6,idx).replace(/\s+/g, ' ').trim()};
 		data = data.substring(idx).replace(/[\:\n\r]+/g,"|").trim();	      
 		data = data.split("|");
@@ -260,6 +273,7 @@ Ogr2ogr.prototype.info = function (cb) {
 			obj[data[i]]=data[i+1].trim();
 
 		obj = JSON.stringify(obj);
+		*/
 		one(null, obj)
 	})
 }
