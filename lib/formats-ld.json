@@ -13,6 +13,7 @@
   "GPSTrackMaker": { },
   "GPSTrackMaker": { },
   "PGDump": { },
+  "FileGDB": { } ,
   "GPSBabel": { },
   "GFT": { },
   "CouchDB": { },
