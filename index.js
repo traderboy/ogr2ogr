@@ -163,7 +163,9 @@ Ogr2ogr.prototype._run = function () {
       args.push('-t_srs', ogr2ogr._targetSrs)
       args.push('-a_srs', ogr2ogr._targetSrs)
     }
-    args.push(ogr2ogr._destination || ogr2ogr._ogrOutPath, ogrInPath)
+    //args.push(ogr2ogr._destination || ogr2ogr._ogrOutPath, ogrInPath)
+    //added sah account for fileGDB folder creation
+    args.push(ogr2ogr._destination? "tmp/"+ ogr2ogr._destination: ogr2ogr._ogrOutPath, ogrInPath)
     if (ogr2ogr._options) args = args.concat(ogr2ogr._options)
 
     var errbuf = "";
@@ -209,7 +211,9 @@ Ogr2ogr.prototype._run = function () {
       return ogr2ogr._clean()
     }
 
-    var zs = zip.createZipStream(ogr2ogr._ogrOutPath)
+    //var zs = zip.createZipStream(ogr2ogr._ogrOutPath)
+    //added sah fileGDB folder zip
+    var zs = ogr2ogr._destination ? zip.createZipStreamFolder( ogr2ogr._destination) : zip.createZipStream(ogr2ogr._ogrOutPath )
     zs.on('error', function (er) { ostream.emit('error', er) })
     zs.on('end', function () { ostream.emit('close'); ogr2ogr._clean() })
     zs.pipe(ostream)
