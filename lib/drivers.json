@@ -20,6 +20,10 @@
     "aliases": [ "shp", "prj", "shx", "dbf" ],
     "output": "zip"
   },{
+	 "format": "FileGDB",
+	 "aliases": ["gdb"],
+	 "output": "zip"  
+  },{
     "format": "Geoconcept",
     "aliases": [ "gxt", "txt" ],
     "output": "gxt"
