@@ -167,7 +167,7 @@ Ogr2ogr.prototype._run = function () {
     if (ogr2ogr._options) args = args.concat(ogr2ogr._options)
 
     var errbuf = "";
-
+    console.log("ogr2ogr " + args.join(" "));
     var s = cp.spawn('ogr2ogr', logCommand(args))
 
     if (!ogr2ogr._isZipOut) s.stdout.pipe(ostream, { end: false })
